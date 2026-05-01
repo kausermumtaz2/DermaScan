@@ -259,11 +259,63 @@ const Footer = () => (
         </div>
     </footer>
 );
-
 const AuthModal = ({ isOpen, onClose, onSuccess }) => {
     const [isLogin, setIsLogin] = useState(true);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [error, setError] = useState('');
 
     if (!isOpen) return null;
+
+    // Blocked dummy/disposable email domains
+    const blockedDomains = [
+        'mailinator.com', 'guerrillamail.com', 'tempmail.com',
+        'yopmail.com', 'throwaway.email', 'sharklasers.com',
+        'trashmail.com', 'fakeinbox.com', 'maildrop.cc',
+        'dispostable.com', 'spamgourmet.com', 'temp-mail.org'
+    ];
+
+    const validateEmail = (email) => {
+        // Check format
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(email)) return 'Please enter a valid email address.';
+
+        // Check blocked domains
+        const domain = email.split('@')[1]?.toLowerCase();
+        if (blockedDomains.includes(domain)) return 'Please use a real email address.';
+
+        return null;
+    };
+
+    const validatePassword = (password) => {
+        if (password.length < 8) return 'Password must be at least 8 characters.';
+        if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter.';
+        if (!/[0-9]/.test(password)) return 'Password must contain at least one number.';
+        return null;
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setError('');
+
+        // Validate email
+        const emailError = validateEmail(email);
+        if (emailError) { setError(emailError); return; }
+
+        // Validate password
+        const passwordError = validatePassword(password);
+        if (passwordError) { setError(passwordError); return; }
+
+        // Validate name on signup
+        if (!isLogin && name.trim().length < 2) {
+            setError('Please enter your full name.');
+            return;
+        }
+
+        // All good
+        onSuccess();
+    };
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 fade-in backdrop-blur-sm">
@@ -278,20 +330,49 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                     </h2>
                 </div>
                 <div className="p-8">
-                    <form onSubmit={(e) => { e.preventDefault(); onSuccess(); }}>
+                    {error && (
+                        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-md">
+                            <i className="fa-solid fa-circle-exclamation mr-2"></i>{error}
+                        </div>
+                    )}
+                    <form onSubmit={handleSubmit}>
                         {!isLogin && (
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-brand-dark mb-1">Full Name</label>
-                                <input type="text" required className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-brown focus:ring-1 focus:ring-brand-brown" placeholder="John Doe" />
+                                <input
+                                    type="text"
+                                    required
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-brown focus:ring-1 focus:ring-brand-brown"
+                                    placeholder="Enter your Full Name"
+                                />
                             </div>
                         )}
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-brand-dark mb-1">Email Address</label>
-                            <input type="email" required className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-brown focus:ring-1 focus:ring-brand-brown" placeholder="you@example.com" />
+                            <input
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-brown focus:ring-1 focus:ring-brand-brown"
+                                placeholder="you@example.com"
+                            />
                         </div>
                         <div className="mb-6">
                             <label className="block text-sm font-medium text-brand-dark mb-1">Password</label>
-                            <input type="password" required className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-brown focus:ring-1 focus:ring-brand-brown" placeholder="••••••••" />
+                            <input
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-brand-brown focus:ring-1 focus:ring-brand-brown"
+                                placeholder="••••••••"
+                            />
+                            {!isLogin && (
+                                <p className="text-xs text-gray-400 mt-1">Min 8 characters, 1 uppercase, 1 number</p>
+                            )}
                         </div>
                         <button type="submit" className="w-full bg-brand-brown text-white py-3 rounded-md font-medium hover:bg-brand-dark transition-colors shadow-md">
                             {isLogin ? 'Log In' : 'Sign Up'}
@@ -299,7 +380,10 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                     </form>
                     <div className="mt-6 text-center text-sm text-gray-600">
                         {isLogin ? "Don't have an account? " : "Already have an account? "}
-                        <button onClick={() => setIsLogin(!isLogin)} className="text-brand-brown font-semibold hover:underline">
+                        <button
+                            onClick={() => { setIsLogin(!isLogin); setError(''); }}
+                            className="text-brand-brown font-semibold hover:underline"
+                        >
                             {isLogin ? 'Sign Up' : 'Log In'}
                         </button>
                     </div>
